@@ -3,7 +3,7 @@ import socket
 
 #lets the client choose the IP of the server
 thehost = input("\nEnter the IP of the server: ")
-#random port like b4
+#random port
 theport = 24949
 
 #same with the server, allows for IPv4 and TCP
