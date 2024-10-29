@@ -1,13 +1,13 @@
-#imports socket
+# imports socket library
 import socket
 
 #lets host be any ip, also can put 0.0.0.0
 thehost = ""
-#random port number is okay i think
+#random port number above 1024
 theport = 24949
 
 #af_inet allows socket to use the normal ip addresses (IPv$)
-#sock_stream is socket type for TCP which is safer than the other one
+#sock_stream is socket type for TCP
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 	#binds the socket to the host and port
 	s.bind((thehost, theport))
@@ -20,7 +20,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 	with conn:
 		print(f"Connected by {addr}")
 		
-		#when this can all happen
 		while True:
 
 			#1024 is max number of bytes
