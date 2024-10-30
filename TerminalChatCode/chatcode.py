@@ -1,7 +1,10 @@
-#Layer 1: Both computers are connected to the sme WiFi Network
-#Layer 2: Computers have NICs
-#Layer 3: SSH uses IP addresses
-#Layer 4: TCP is used to establish a secure connection
+#Layer 1 Physical: Both computers are connected to the same WiFi Network
+#Layer 2 Data link: Computers have NICs to allow data to travel
+#Layer 3 Network: SSH uses IP addresses to identify each device
+#Layer 4 Transport: TCP is used to establish a secure connection when using SSH
+#Layer 5 Session: Named pipes used for session establishment
+#Layer 6 Presentation: Encoding and decoding are used for proper formatting
+#Layer 7 Application: Involves user interaction (inputs)
 
 #to interact with operation system
 import os
@@ -13,7 +16,7 @@ pipe2 = os.getenv("PIPE2", "/tmp/pipe2")
 #if READ_FIRST is set to 1, then it reads first
 read_first = os.getenv("READ_FIRST", "0")
 
-#Layer 5: Named pipes for session establishment
+
 #creating named pipes if they don't exist
 try:
     os.mkfifo(pipe1, 0o600)
