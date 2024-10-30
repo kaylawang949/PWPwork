@@ -52,7 +52,7 @@ while True:
         print(msg_decoded)
         
         #enter message
-        msg = input(">")
+        msg = input("> ")
         if msg.strip().lower() == "exit":
             print("\n...Exiting chat...")
             os.write(fifo2, str.encode("exit"))
@@ -60,7 +60,7 @@ while True:
         os.write(fifo2, str.encode(msg))
     else:
         #enter message and exit if told to
-        msg = input(">")
+        msg = input("> ")
         if msg.lower() == "exit":
             print("\n...Exiting chat...")
             os.write(fifo1, str.encode("exit"))
