@@ -61,7 +61,7 @@ while True:
     else:
         #enter message and exit if told to
         msg = input(">")
-        if msg.strip().lower() == "exit":
+        if msg.lower() == "exit":
             print("Exiting chat...")
             os.write(fifo1, str.encode("exit"))
             break
