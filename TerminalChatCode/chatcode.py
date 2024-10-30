@@ -45,7 +45,7 @@ while True:
         
         #if the message received is exit then exit
         if msg_decoded.lower() == "exit":
-            print("...Other user disconnected. Exiting chat...")
+            print("\n...Other user disconnected. Exiting chat...")
             break
         
         #show message
@@ -54,7 +54,7 @@ while True:
         #enter message
         msg = input(">")
         if msg.strip().lower() == "exit":
-            print("...Exiting chat...")
+            print("\n...Exiting chat...")
             os.write(fifo2, str.encode("exit"))
             break
         os.write(fifo2, str.encode(msg))
@@ -62,7 +62,7 @@ while True:
         #enter message and exit if told to
         msg = input(">")
         if msg.lower() == "exit":
-            print("...Exiting chat...")
+            print("\n...Exiting chat...")
             os.write(fifo1, str.encode("exit"))
             break
         
@@ -75,7 +75,7 @@ while True:
         
         #if told to exit then exit
         if msg_decoded.lower() == "exit":
-            print("...Other user disconnected. Exiting chat...")
+            print("\n...Other user disconnected. Exiting chat...")
             break
         
         #show message
