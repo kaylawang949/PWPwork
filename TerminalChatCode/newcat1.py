@@ -2,4 +2,4 @@
 import os
 
 #listen using newcat
-os.system('nc -lk 24949')
+os.system('nc -l 24949')
