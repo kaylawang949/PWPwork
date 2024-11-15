@@ -1,36 +1,63 @@
 import cv2
 import numpy as np
-import cv2 from skimage.metrics
-import mean_squared_error,peak_signal_noise_ratio,structural_similarity
-import matplotlib.pyplot as plt
+
+man_pic = cv2.imread('photos/manface.jpg', cv2.IMREAD_GRAYSCALE)
+crowd = cv2.imread('photos/crowd.jpg', cv2.IMREAD_GRAYSCALE)
 
 
-manpic = cv2.imread("photos/manface.jpg", cv2.IMREAD_GRAYSCALE)
-
+#sharpen
 kernel = np.array([[0, -1, 0],
-[-1, 5, -1],
-[0, -1, 0]])
-sharpened = cv2.filter2D(manpic, -1, kernel)
+                           [-1, 5, -1],
+                           [0, -1, 0]])
 
-# cv2.imshow("Original Image", manpic)
-# cv2.imshow("Sharpened Image", sharpened)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+#gaussian blur
+crowd = cv2.filter2D(crowd, -1, kernel)
+crowd = cv2.GaussianBlur(crowd, (7, 7), 0)
 
+#canny edge detection on man face 
+man_pic = cv2.GaussianBlur(man_pic, (7, 7), 0)
+man_edges = cv2.Canny(man_pic, 30, 100)
 
+#initialize haar cascades 
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-#Reading the image
-image = cv2.imread(sharpened)
-(H, W) = image.shape[:2]
-# convert the image to grayscale
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-# blur the image
-blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-# Perform the canny operator
-canny = cv2.Canny(blurred, 30, 150)
+#scanning faces in crowd 
+faces = face_cascade.detectMultiScale(crowd, scaleFactor=1.12, minNeighbors=3)
 
-fig,ax =  plt.subplots(1,2,figsize=(18, 18))
-ax[0].imshow(gray,cmap='gray')
-ax[1].imshow(canny,cmap='gray')
-ax[0].axis('off')
-ax[1].axis('off')
+#rectangles around detected faces 
+for (x, y, w, h) in faces:
+    cv2.rectangle(crowd, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+contours_target, _ = cv2.findContours(man_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+target_contour = max(contours_target, key=cv2.contourArea)
+
+minimum = 1
+coords = None
+
+for (x, y, w, h) in faces:
+    face_in_crowd = crowd[y:y + h, x:x + w]
+
+    face_in_crowd_edges = cv2.Canny(face_in_crowd, 30, 100)
+
+    face_in_crowd_edges = cv2.resize(face_in_crowd_edges, (400, 400))
+    man_edges = cv2.resize(man_edges, (400, 400))
+
+    contours_crowd, _ = cv2.findContours(face_in_crowd_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    for contour in contours_crowd: 
+        similarity = cv2.matchShapes(target_contour, contour, cv2.CONTOURS_MATCH_I3, 0.0)
+        print(similarity)
+
+        if similarity < minimum:
+            minimum = similarity
+            coords = (x, y, w, h)
+
+if coords is not None:
+    x, y, w, h = coords
+    cv2.rectangle(crowd, (x, y), (x + w, y + h), (0, 0, 0), 2)  
+
+cv2.imshow('Sharpened Image', man_edges)
+cv2.imshow('Crowd image', crowd)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
