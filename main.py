@@ -6,9 +6,7 @@ crowd = cv2.imread('photos/crowd.jpg', cv2.IMREAD_GRAYSCALE)
 
 
 #sharpen
-kernel = np.array([[0, -1, 0],
-                           [-1, 5, -1],
-                           [0, -1, 0]])
+kernel = np.array([[0, -1, 0], [-1, 5, -], [0, -1, 0]])
 
 #gaussian blur
 crowd = cv2.filter2D(crowd, -1, kernel)
