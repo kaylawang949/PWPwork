@@ -32,7 +32,7 @@ contours_target, _ = cv2.findContours(man_edges, cv2.RETR_EXTERNAL, cv2.CHAIN_AP
 target_contour = max(contours_target, key=cv2.contourArea)
 
 min_similarity = 1
-best_best_coords = None
+best_coords = None
 
 for (x, y, w, h) in faces:
     face_in_crowd = crowd[y:y + h, x:x + w]
@@ -50,10 +50,10 @@ for (x, y, w, h) in faces:
 
         if similarity < min_similarity:
             min_similarity = similarity
-            best_best_coords = (x, y, w, h)
+            best_coords = (x, y, w, h)
 
-if best_best_coords is not None:
-    x, y, w, h = best_best_coords
+if best_coords is not None:
+    x, y, w, h = best_coords
     cv2.rectangle(crowd, (x, y), (x + w, y + h), (0, 0, 0), 2)  
 
 cv2.imshow('Sharpened Image', man_edges)
