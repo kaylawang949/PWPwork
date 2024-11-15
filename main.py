@@ -58,6 +58,5 @@ if best_coords is not None:
 
 cv2.imshow('Sharpened Image', man_edges)
 cv2.imshow('Crowd image', crowd)
-
 cv2.waitKey(0)
 cv2.destroyAllWindows()
