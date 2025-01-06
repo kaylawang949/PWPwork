@@ -5,24 +5,23 @@ import math
 
 
 def mainfilter(frame):
-
-
     mask = np.zeros(frame.shape[:2], dtype="uint8")
     cv2.rectangle(mask, (600, 200), (1400, 900), (255, 0, 0), -1)
     masked = cv2.bitwise_and(frame, frame, mask=mask)
 
-
-    # following code from group github
-    gray = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY) # converts to grayscale
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0) # applies gaussian blur
-    edges = cv2.Canny(blurred, 50, 150, apertureSize=3) # detect edges
+    gray = cv2.cvtColor(masked, cv2.COLOR_BGR2GRAY)  # converts to grayscale
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)  # applies gaussian blur
+    edges = cv2.Canny(blurred, 50, 150, apertureSize=3)  # detect edges
 
     mask_border = cv2.rectangle(
-        np.zeros_like(mask), (610, 210), (1390, 890), 255, -1)
+        np.zeros_like(mask), (610, 210), (1390, 890), 255, -1)  # Shrink mask by 10px
     edges = cv2.bitwise_and(edges, edges, mask=mask_border)
 
+    dilation = cv2.dilate(edges, np.array([5, 5]), iterations=20)
+    closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, np.array([9, 9]))
+    erosion = cv2.erode(closing, np.array([5, 5]), iterations=10)
 
-    return edges
+    return erosion
 
 
 
