@@ -18,7 +18,7 @@ def mainfilter(frame):
     edges = cv2.bitwise_and(edges, edges, mask=mask_border)
 
     dilation = cv2.dilate(edges, np.array([5, 5]), iterations=20)
-    closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, np.array([9, 9]))  #
+    closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, np.array([9, 9]))  #removes noise
     erosion = cv2.erode(closing, np.array([5, 5]), iterations=10)  # erodes boundaries
 
     return erosion
