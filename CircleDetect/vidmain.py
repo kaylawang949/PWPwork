@@ -1,52 +1,3 @@
-# import numpy as np
-# import cv2
-# import math
-
-
-
-# def mainfilter(frame):
-# 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)  # grayscale
-# 	output = frame.copy()
-# 	circleslist = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.4, 100, param1=100, param2=20)
-# 	if circleslist is not None:
-# 		# make coords into integers
-# 		circles = np.round(circleslist[0, :]).astype('int')
-# 		# look for 1st circle in array
-# 		try:
-# 			x, y, r = circles[0]
-# 		except:
-# 			print('no circles found')
-# 		# draw circle and center point
-# 		cv2.circle(output, (x, y), r, (0, 255, 0), 4)
-# 		cv2.circle(output, (x, y), 3, (255, 0, 0), 5)
-# 		return output
-
-
-
-
-# # following code from: https://www.geeksforgeeks.org/python-opencv-capture-video-from-camera/
-
-# # Open the default camera
-# cam = cv2.VideoCapture('IMG_8970.mov')
-
-# while True:
-#     ret, frame = cam.read()
-#     if ret:
-#         frame = cv2.flip(frame, 1)
-#         picture = mainfilter(frame)
-
-#         # Display the captured frame
-#         cv2.imshow('og', picture)
-
-#     # Press 'q' to exit the loop
-#     if cv2.waitKey(1) == ord('q'):
-#         break
-
-# # Release the capture and writer objects
-# cam.release()
-# cv2.destroyAllWindows()
-
-
 import numpy as np
 import cv2
 import math
@@ -58,10 +9,9 @@ def mainfilter(frame):
 
 	output = frame.copy()
 	height, width, _ = output.shape
-	#output = cv2.resize(output, (300, int(height * 300 / width)))
 	gra = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)  # grayscale
 	gray = cv2.GaussianBlur(gra, (15, 15), sigmaX=0)
-	circleslist = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.4, 100, param1=60, param2=150)
+	circleslist = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.4, 100, param1=30, param2=150)
 	if circleslist is not None:
 		# make coords into integers
 		circles = np.round(circleslist[0, :]).astype('int')
@@ -71,9 +21,9 @@ def mainfilter(frame):
 		except:
 			print('no circles found')
 		# draw circle and center point
-		cv2.circle(output, (x, y), r, (0, 255, 0), 4)
+		cv2.circle(output, (x, y), r, (0, 255, 0), 9)
 		cv2.circle(output, (x, y), 3, (255, 0, 0), 5)
-		return output
+	return output
 
 
 
@@ -81,7 +31,7 @@ def mainfilter(frame):
 # following code from: https://www.geeksforgeeks.org/python-opencv-capture-video-from-camera/
 
 # Open the default camera
-cam = cv2.VideoCapture('IMG_2127.MOV')
+cam = cv2.VideoCapture('tube2_8f5ihnUi.mov')
 
 while True:
     ret, frame = cam.read()
