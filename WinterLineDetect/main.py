@@ -127,9 +127,8 @@ def midpoints(line1lst):
     return (int(avg_x), int(avg_y))
 
 
-# following code from: https://www.geeksforgeeks.org/python-opencv-capture-video-from-camera/
 
-# Open the default camera
+# opening camera
 cam = cv2.VideoCapture('IMG_5708.MOV')
 
 while True:
@@ -139,15 +138,15 @@ while True:
         picture = mainfilter(frame)
         picture2 = houghstuff(picture, frame)
 
-        # Display the captured frame
+        # show frames
         cv2.imshow('og', picture)
         cv2.imshow('pic', picture2)
 
-    # Press 'q' to exit the loop
+    # exit from pressing q
     if cv2.waitKey(1) == ord('q'):
         break
 
-# Release the capture and writer objects
+# release
 cam.release()
 cv2.destroyAllWindows()
 
