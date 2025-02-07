@@ -10,7 +10,7 @@ def mainfilter(frame):    # DEFINE function mainfilter(frame)
     kernel = np.ones((41, 41))    # CREATE kernel for morphological operations
     closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)    # APPLY morphological closing to edges
 
-    return closed    # RETURN processed image
+    return closed    # RETURN processed image 
 
 def midpoints(line1, line2):    # DEFINE function midpoints(line1, line2)
 
