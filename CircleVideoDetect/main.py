@@ -1,9 +1,9 @@
-import numpy as np
-import cv2
+import numpy as np  # IMPORT numpy library
+import cv2  # IMPORT opencv library
 
 
-def circledetect(frame):
-	output = frame.copy()
+def circledetect(frame):  # DEFINE circledetect function w parameter frame
+	output = frame.copy()  # COPY frame
 	gra = cv2.cvtColor(output, cv2.COLOR_BGR2GRAY)  # grayscale
 	gray = cv2.GaussianBlur(gra, (15, 15), sigmaX=0)  # gaussian blur
 	circleslist = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1.4, 100, param1=30, param2=130)
