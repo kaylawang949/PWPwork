@@ -61,14 +61,15 @@ def curvedetect(frame):    # DEFINE function curvedetect(frame)
     return mask    # RETURN processed mask
 
 def overlay_arrow(frame, arrow):
-    height, width, _ = arrow.shape
-    height = int(height*0.2); width = int(width*0.2)
-    arrow = cv2.resize(arrow, (height, width))
+    arrow_height, arrow_width, _ = arrow.shape
+    arrow_height = int(arrow_height * 0.2)
+    arrow_width = int(arrow_width * 0.2)
+    arrow = cv2.resize(arrow, (arrow_width, arrow_height))
 
     arrow_bgr = arrow[:, :, :3]
     arrow_alpha = arrow[:, :, 3]
 
-    roi = frame[10:10+height, 850:850+width]
+    roi = frame[10:10 + arrow_height, -arrow_width - 10:-10]
     mask = arrow_alpha.astype(float) / 255.0
 
     for x in range(3):
@@ -76,12 +77,14 @@ def overlay_arrow(frame, arrow):
 
     return frame
 
-cam = cv2.VideoCapture('Screen Recording 2025-02-19 at 9.36.29 AM.mov')    # INITIALIZE camera capture
+cam = cv2.VideoCapture('Untitled+design.mov')    # INITIALIZE camera capture
+arrow = cv2.imread('pink arrow.png', cv2.IMREAD_UNCHANGED)    # LOAD pink arrow image
 
 while True:    # WHILE camera is active
     ret, frame = cam.read()    # CAPTURE frame
     if ret:    # IF frame is captured successfully
         picture = curvedetect(frame)    # PROCESS frame using curvedetect
+        picture = overlay_arrow(picture, arrow)    # OVERLAY pink arrow
 
         cv2.imshow('lines', picture)    # DISPLAY processed frame in window
 
