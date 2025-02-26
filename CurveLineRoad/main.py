@@ -4,8 +4,8 @@ import cv2    # IMPORT opencv library
 def mainfilter(frame):    # DEFINE function mainfilter(frame)
 
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)    # CONVERT frame to grayscale
-    blurred = cv2.GaussianBlur(gray, (23, 23), 0)    # APPLY Gaussian blur to smooth image
-    edges = cv2.Canny(blurred, 30, 80, apertureSize=3)    # DETECT edges using Canny edge detector
+    blurred = cv2.GaussianBlur(gray, (15, 15), 0)    # APPLY Gaussian blur to smooth image
+    edges = cv2.Canny(blurred, 120, 80, apertureSize=3)    # DETECT edges using Canny edge detector
 
     kernel = np.ones((41, 41))    # CREATE kernel for morphological operations
     closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)    # APPLY morphological closing to edges
@@ -29,7 +29,7 @@ def curvedetect(frame):    # DEFINE function curvedetect(frame)
 
     mask = frame.copy()    # COPY frame to mask
     height, width, _ = mask.shape    # EXTRACT height and width of frame
-    masked = mask[100:height - 100, 350:width - 350]    # CROP ROI
+    masked = mask[1100:height - 100, 400:width - 350]    # CROP ROI
     filtered = mainfilter(masked)    # APPLY mainfilter to ROI
 
     contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -44,18 +44,18 @@ def curvedetect(frame):    # DEFINE function curvedetect(frame)
         # DRAW polyline on masked image
 
         line2 = cv2.approxPolyDP(contours[-2], 6, True)    # APPROXIMATE the second-largest contour
-        line2 = line2[:int(len(line2) / 1.65)]    # EXTRACT portion of the contour
+        line2 = line2[:int(len(line2) / 1.68)]    # EXTRACT portion of the contour
         cv2.polylines(masked, [line2], False, (0, 255, 0), 7, lineType=cv2.LINE_AA)
         # DRAW polyline on masked image
 
         midlist2 = midpoints(line1, line2)    # CALCULATE midpoints between the two contours
 
-        if len(midlist2) > 0:    # IF midpoints exist
-            cv2.polylines(masked, [midlist2], False, (255, 0, 0), 6, lineType=cv2.LINE_AA)
+        #    if len(midlist2) > 0:    # IF midpoints exist
+        #        cv2.polylines(masked, [midlist2], False, (255, 0, 0), 6, lineType=cv2.LINE_AA)
             # DRAW polyline connecting midpoints
 
-    mask[100:height - 100, 350:width - 350] = masked    # REPLACE ROI in original mask
-    cv2.rectangle(mask, (350, 100), (width - 350, height - 100), (0, 0, 0), 1)
+    mask[1100:height - 100, 400:width - 350] = masked    # REPLACE ROI in original mask
+    cv2.rectangle(mask, (1000, 1100), (width - 350, height - 100), (0, 0, 0), 1)
     # DRAW rectangle around ROI
 
     return mask    # RETURN processed mask
@@ -77,7 +77,7 @@ def overlay_arrow(frame, arrow):
 
     return frame
 
-cam = cv2.VideoCapture('Untitled+design.mov')    # INITIALIZE camera capture
+cam = cv2.VideoCapture('Screen Recording 2025-02-19 at 9.36.29 AM.mov')    # INITIALIZE camera capture
 arrow = cv2.imread('pink arrow.png', cv2.IMREAD_UNCHANGED)    # LOAD pink arrow image
 
 while True:    # WHILE camera is active
@@ -87,6 +87,7 @@ while True:    # WHILE camera is active
         picture = overlay_arrow(picture, arrow)    # OVERLAY pink arrow
 
         cv2.imshow('lines', picture)    # DISPLAY processed frame in window
+
 
     if cv2.waitKey(1) == ord('q'):    # IF q key is pressed
         break    # BREAK loop
