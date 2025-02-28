@@ -1,61 +1,24 @@
-import numpy as np
 import cv2
+import numpy as np
+from matplotlib import pyplot as plt
 
-def mainfilter(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (15, 15), 0)
-    edges = cv2.Canny(blurred, 120, 80, apertureSize=3)
 
-    kernel = np.ones((41, 41))
-    closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
-    return closed
+def draw_lines(image, hough_lines):
+    for line in hough_lines:
+        x1, y1, x2, y2 = line[0]
+        cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-def midpoints(line1, line2):
-    midlist = [[(x1 + x2) // 2, (y1 + y2) // 2]
-               for (x1, y1), (x2, y2) in zip((pt[0] for pt in line1), (pt[0] for pt in line2))]
+    return image
 
-    if len(line1) > 1 and len(line2) > 1:
-        midlist.append([(line1[-1][0][0] + line2[-1][0][0]) // 2,
-                        (line1[-1][0][1] + line2[-1][0][1]) // 2])
 
-    return np.array(midlist)
-
-def curvedetect(frame):
-    mask = frame.copy()
-    height, width, _ = mask.shape
-
-    # Define upside-down, slightly narrower, much taller trapezoidal ROI
-    roi_vertices = np.array([[(width // 2 - 850, height - 100),
-                              (width // 2 + 1800, height - 100),
-                              (width // 2 + 850, height - 800),
-                              (width // 2 - 300, height - 800)]], dtype=np.int32)
-
-    # Create mask for the trapezoid
-    roi_mask = np.zeros_like(mask)
-    cv2.fillPoly(roi_mask, roi_vertices, (255, 255, 255))
-
-    masked = cv2.bitwise_and(mask, roi_mask)
-    filtered = mainfilter(masked)
-
-    contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = sorted(contours, key=cv2.contourArea)
-
-    if len(contours) >= 2:
-        line1 = cv2.approxPolyDP(contours[-1], 6, True)
-        line1 = line1[:int(len(line1) / 1.68)]
-        cv2.polylines(masked, [line1], False, (0, 255, 0), 7, lineType=cv2.LINE_AA)
-
-        line2 = cv2.approxPolyDP(contours[-2], 6, True)
-        line2 = line2[:int(len(line2) / 1.68)]
-        cv2.polylines(masked, [line2], False, (0, 255, 0), 7, lineType=cv2.LINE_AA)
-
-        midlist2 = midpoints(line1, line2)
-
-    cv2.polylines(mask, roi_vertices, isClosed=True, color=(0, 0, 255), thickness=2)
-
-    return mask
-
+def roi(image, vertices):
+    mask = np.zeros_like(image)
+    mask_color = 255
+    vertices = vertices.reshape((-1, 1, 2))  # Ensure it's a 2D array with shape (n, 1, 2)
+    cv2.fillPoly(mask, [vertices], mask_color)  # Pass vertices as a list of arrays
+    cropped_img = cv2.bitwise_and(image, mask)
+    return cropped_img
 def overlay_arrow(frame, arrow):
     arrow_height, arrow_width, _ = arrow.shape
     arrow_height = int(arrow_height * 0.2)
@@ -73,19 +36,72 @@ def overlay_arrow(frame, arrow):
 
     return frame
 
-cam = cv2.VideoCapture('Screen Recording 2025-02-19 at 9.36.29 AM.mov')
+def process(img):
+    height = img.shape[0]
+    width = img.shape[1]
+
+    # Define the ROI vertices based on your specifications
+    roi_vertices = np.array([
+        [int(width * 0.38), int(height * 0.5)],  # Top-left
+        [int(width * 0.6), int(height * 0.5)],  # Top-right
+        [int(width * 0.93), int(height * 0.98)], # Bottom-right
+        [int(width * 0.15), int(height * 0.98)]  # Bottom-left
+    ], dtype=np.int32)
+
+    # Convert the image to grayscale
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray_img = cv2.dilate(gray_img, kernel=np.ones((3, 3), np.uint8))
+
+    # Perform Canny edge detection
+    canny = cv2.Canny(gray_img, 130, 220)
+
+    # Apply ROI to the Canny edge image
+    roi_img = roi(canny, roi_vertices)
+
+    # Debug: Check if ROI mask is working (Show the mask itself)
+    cv2.imshow("ROI Mask", roi_img)
+
+    # Draw the ROI polygon on the original image
+    cv2.polylines(img, [roi_vertices], isClosed=True, color=(255, 0, 0), thickness=3)
+
+    # Detect lines using Hough Line Transform
+    lines = cv2.HoughLinesP(roi_img, 1, np.pi / 180, threshold=10, minLineLength=15, maxLineGap=2)
+
+    # Debug: Check the lines detected
+    if lines is not None:
+        print(f"Detected {len(lines)} lines.")
+    else:
+        print("No lines detected.")
+
+    # Draw the detected lines on the original image
+    final_img = draw_lines(img, lines)
+
+    return final_img
+
+cap = cv2.VideoCapture("test2 (1).mp4")
 arrow = cv2.imread('pink arrow.png', cv2.IMREAD_UNCHANGED)
 
-while True:
-    ret, frame = cam.read()
-    if ret:
-        picture = curvedetect(frame)
-        picture = overlay_arrow(picture, arrow)
+while cap.isOpened():
+    ret, frame = cap.read()
 
-        cv2.imshow('lines', picture)
-
-    if cv2.waitKey(1) == ord('q'):
+    if not ret:
         break
 
-cam.release()
+    try:
+        picture = process(frame)
+        picture = overlay_arrow(frame, arrow)
+
+
+        # Show the frame
+        cv2.imshow("Frame", picture)
+
+        # Wait for key press (1ms delay to update window)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    except Exception as e:
+        print(f"Error processing frame: {e}")
+        break
+
+cap.release()
 cv2.destroyAllWindows()
