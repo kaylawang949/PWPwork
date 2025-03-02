@@ -1,24 +1,112 @@
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
+
+# filter out flat lines
+SLOPE_THRESHOLD = 0.5  # adjustable
 
 
-
-def draw_lines(image, hough_lines):
-    for line in hough_lines:
-        x1, y1, x2, y2 = line[0]
-        cv2.line(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-    return image
+# function for roi
+def draw_roi(frame, roi_points):
+    cv2.polylines(frame, [roi_points], isClosed=True, color=(0, 0, 0), thickness=1)
+    return frame
 
 
-def roi(image, vertices):
-    mask = np.zeros_like(image)
-    mask_color = 255
-    vertices = vertices.reshape((-1, 1, 2))  # Ensure it's a 2D array with shape (n, 1, 2)
-    cv2.fillPoly(mask, [vertices], mask_color)  # Pass vertices as a list of arrays
-    cropped_img = cv2.bitwise_and(image, mask)
-    return cropped_img
+def process_frame(frame, arrow):
+    height, width = frame.shape[:2]
+
+    # define adjustable roi
+    roi_points = np.array([
+        [0.3 * width, height * 0.8],  # bottom left
+        [0.4 * width, 0.5 * height],  # left midpoint
+        [0.6 * width, 0.5 * height],  # right midpoint
+        [0.9 * width, height * 0.8]  # bottom right
+    ], np.int32)
+
+    # draw roi
+    frame = draw_roi(frame, roi_points)
+
+    # make roi mask
+    mask = np.zeros_like(frame)
+    cv2.fillPoly(mask, [roi_points], (255, 255, 255))
+
+    # apply mask
+    roi_frame = cv2.bitwise_and(frame, mask)
+
+    # convert to grayscale
+    gray = cv2.cvtColor(roi_frame, cv2.COLOR_BGR2GRAY)
+
+    # apply gaussian blur
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # apply canny edge
+    edges = cv2.Canny(blurred, 50, 150)
+
+    # apply hough lines
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=50, minLineLength=100, maxLineGap=50)
+
+    if lines is not None:
+
+        left_lines = []
+        right_lines = []
+
+        for line in lines:
+            x1, y1, x2, y2 = line[0]
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else float('inf')  # Avoid division by zero for vertical lines
+
+            # filter based on slope threshold
+            if abs(slope) > SLOPE_THRESHOLD:
+                if slope < 0:  # left lines (negative slope)
+                    left_lines.append(line[0])
+                else:  # right lines (positive slope)
+                    right_lines.append(line[0])
+
+        # extend the left and right lines
+        y_bottom = int(height * 0.9)
+        y_top = int(height * 0.55)
+
+        # extend the lines for left and right lanes
+        def extend_line(line, y1, y2):
+            x1, y1_, x2, y2_ = line
+            # check for zero division
+            if x1 == x2:
+                return [(x1, y1), (x1, y2)]
+            else:
+                # find slope and intercept
+                slope = (y2_ - y1_) / (x2 - x1)
+                intercept = y1_ - slope * x1
+                if slope != 0:  # no zero division
+                    x1_new = int((y1 - intercept) / slope)
+                    x2_new = int((y2 - intercept) / slope)
+                    return [(x1_new, y1), (x2_new, y2)]
+                else:
+                    return [(x1, y1), (x2, y2)]
+
+        left_extended = [extend_line(line, y_top, y_bottom) for line in left_lines]
+        right_extended = [extend_line(line, y_top, y_bottom) for line in right_lines]
+
+        # average line endpoints
+        def average_lines(lines):
+            if len(lines) == 0:
+                return None
+            x1_avg = int(np.mean([line[0][0] for line in lines]))
+            x2_avg = int(np.mean([line[1][0] for line in lines]))
+            return [(x1_avg, y_top), (x2_avg, y_bottom)]
+
+        left_lane = average_lines(left_extended)
+        right_lane = average_lines(right_extended)
+
+        # draw lanes
+        if left_lane is not None:
+            cv2.line(frame, left_lane[0], left_lane[1], (0, 255, 0), 5)
+        if right_lane is not None:
+            cv2.line(frame, right_lane[0], right_lane[1], (0, 255, 0), 5)
+
+    # overlay arrow
+    frame = overlay_arrow(frame, arrow)
+
+    return frame
+
+
 def overlay_arrow(frame, arrow):
     arrow_height, arrow_width, _ = arrow.shape
     arrow_height = int(arrow_height * 0.2)
@@ -36,71 +124,23 @@ def overlay_arrow(frame, arrow):
 
     return frame
 
-def process(img):
-    height = img.shape[0]
-    width = img.shape[1]
+cap = cv2.VideoCapture('My Movie 7.MOV')
+arrow = cv2.imread("pink arrow.png", cv2.IMREAD_UNCHANGED)
 
-    # Define the ROI vertices based on your specifications
-    roi_vertices = np.array([
-        [int(width * 0.38), int(height * 0.5)],  # Top-left
-        [int(width * 0.6), int(height * 0.5)],  # Top-right
-        [int(width * 0.93), int(height * 0.98)], # Bottom-right
-        [int(width * 0.15), int(height * 0.98)]  # Bottom-left
-    ], dtype=np.int32)
-
-    # Convert the image to grayscale
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray_img = cv2.dilate(gray_img, kernel=np.ones((3, 3), np.uint8))
-
-    # Perform Canny edge detection
-    canny = cv2.Canny(gray_img, 130, 220)
-
-    # Apply ROI to the Canny edge image
-    roi_img = roi(canny, roi_vertices)
-
-    # Debug: Check if ROI mask is working (Show the mask itself)
-    cv2.imshow("ROI Mask", roi_img)
-
-    # Draw the ROI polygon on the original image
-    cv2.polylines(img, [roi_vertices], isClosed=True, color=(255, 0, 0), thickness=3)
-
-    # Detect lines using Hough Line Transform
-    lines = cv2.HoughLinesP(roi_img, 1, np.pi / 180, threshold=10, minLineLength=15, maxLineGap=2)
-
-    # Debug: Check the lines detected
-    if lines is not None:
-        print(f"Detected {len(lines)} lines.")
-    else:
-        print("No lines detected.")
-
-    # Draw the detected lines on the original image
-    final_img = draw_lines(img, lines)
-
-    return final_img
-
-cap = cv2.VideoCapture("test2 (1).mp4")
-arrow = cv2.imread('pink arrow.png', cv2.IMREAD_UNCHANGED)
+if not cap.isOpened():
+    print("Error: Could not open video.")
+    exit()
 
 while cap.isOpened():
     ret, frame = cap.read()
-
     if not ret:
         break
 
-    try:
-        picture = process(frame)
-        picture = overlay_arrow(frame, arrow)
+    processed_frame = process_frame(frame, arrow)
 
+    cv2.imshow('Lane Detection', processed_frame)
 
-        # Show the frame
-        cv2.imshow("Frame", picture)
-
-        # Wait for key press (1ms delay to update window)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    except Exception as e:
-        print(f"Error processing frame: {e}")
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()
