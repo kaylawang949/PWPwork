@@ -4,14 +4,12 @@ import numpy as np
 # filter out flat lines
 SLOPE_THRESHOLD = 0.5  # adjustable
 
-
 # function for roi
 def draw_roi(frame, roi_points):
     cv2.polylines(frame, [roi_points], isClosed=True, color=(0, 0, 0), thickness=1)
     return frame
 
-
-def process_frame(frame, arrow):
+def process_frame(frame, arrow, frame_count):
     height, width = frame.shape[:2]
 
     # define adjustable roi
@@ -51,7 +49,7 @@ def process_frame(frame, arrow):
 
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else float('inf')  # Avoid division by zero for vertical lines
+            slope = (y2 - y1) / (x2 - x1) if x2 != x1 else float('inf')
 
             # filter based on slope threshold
             if abs(slope) > SLOPE_THRESHOLD:
@@ -67,14 +65,12 @@ def process_frame(frame, arrow):
         # extend the lines for left and right lanes
         def extend_line(line, y1, y2):
             x1, y1_, x2, y2_ = line
-            # check for zero division
             if x1 == x2:
                 return [(x1, y1), (x1, y2)]
             else:
-                # find slope and intercept
                 slope = (y2_ - y1_) / (x2 - x1)
                 intercept = y1_ - slope * x1
-                if slope != 0:  # no zero division
+                if slope != 0:
                     x1_new = int((y1 - intercept) / slope)
                     x2_new = int((y2 - intercept) / slope)
                     return [(x1_new, y1), (x2_new, y2)]
@@ -102,16 +98,27 @@ def process_frame(frame, arrow):
             cv2.line(frame, right_lane[0], right_lane[1], (0, 255, 0), 5)
 
     # overlay arrow
-    frame = overlay_arrow(frame, arrow)
+    frame = overlay_arrow(frame, arrow, frame_count)
 
     return frame
 
+def rotate_arrow(arrow, angle):
+    height, width = arrow.shape[:2]
+    center = (width // 2, height // 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
+    rotated_arrow = cv2.warpAffine(arrow, rotation_matrix, (width, height), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    return rotated_arrow
 
-def overlay_arrow(frame, arrow):
+def overlay_arrow(frame, arrow, frame_count):
     arrow_height, arrow_width, _ = arrow.shape
     arrow_height = int(arrow_height * 0.2)
     arrow_width = int(arrow_width * 0.2)
     arrow = cv2.resize(arrow, (arrow_width, arrow_height))
+    
+    if 500 <= frame_count < 650:  # 20s to 25s
+        arrow = rotate_arrow(arrow, -90)
+    elif 1450 <= frame_count < 1600:  # 60s to 65s
+        arrow = rotate_arrow(arrow, 90)
 
     arrow_bgr = arrow[:, :, :3]
     arrow_alpha = arrow[:, :, 3]
@@ -131,14 +138,18 @@ if not cap.isOpened():
     print("Error: Could not open video.")
     exit()
 
+frame_count = 0
+
 while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
 
-    processed_frame = process_frame(frame, arrow)
+    processed_frame = process_frame(frame, arrow, frame_count)
 
     cv2.imshow('Lane Detection', processed_frame)
+
+    frame_count += 1
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
