@@ -1,8 +1,10 @@
 import cv2
 import numpy as np
+import math
 
 # filter out flat lines
 SLOPE_THRESHOLD = 0.5  # adjustable
+
 
 # function for roi
 def draw_roi(frame, roi_points):
@@ -97,24 +99,28 @@ def process_frame(frame, arrow, frame_count):
         if right_lane is not None:
             cv2.line(frame, right_lane[0], right_lane[1], (0, 255, 0), 5)
 
-    # overlay arrow
-    frame = overlay_arrow(frame, arrow, frame_count)
+        if left_lane is not None and right_lane is not None:
+            frame = drawmidline(frame, left_lane, right_lane)
+            frame = overlay_arrow(frame, arrow, frame_count)
 
     return frame
+
 
 def rotate_arrow(arrow, angle):
     height, width = arrow.shape[:2]
     center = (width // 2, height // 2)
     rotation_matrix = cv2.getRotationMatrix2D(center, angle, 1.0)
-    rotated_arrow = cv2.warpAffine(arrow, rotation_matrix, (width, height), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    rotated_arrow = cv2.warpAffine(arrow, rotation_matrix, (width, height), flags=cv2.INTER_LINEAR,
+                                   borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
     return rotated_arrow
+
 
 def overlay_arrow(frame, arrow, frame_count):
     arrow_height, arrow_width, _ = arrow.shape
     arrow_height = int(arrow_height * 0.2)
     arrow_width = int(arrow_width * 0.2)
     arrow = cv2.resize(arrow, (arrow_width, arrow_height))
-    
+
     if 500 <= frame_count < 650:  # 20s to 25s
         arrow = rotate_arrow(arrow, -90)
     elif 1450 <= frame_count < 1600:  # 60s to 65s
@@ -130,6 +136,53 @@ def overlay_arrow(frame, arrow, frame_count):
         roi[:, :, x] = (mask * arrow_bgr[:, :, x] + (1 - mask) * roi[:, :, x])
 
     return frame
+
+TILT_ANGLE = -16  # degrees to the left
+def drawmidline(frame, left_lane, right_lane):
+    if left_lane is None or right_lane is None:
+        return frame
+
+    # calculate midpoints of the left and right lanes
+    left_mid = ((left_lane[0][0] + left_lane[1][0]) // 2, (left_lane[0][1] + left_lane[1][1]) // 2)
+    right_mid = ((right_lane[0][0] + right_lane[1][0]) // 2, (right_lane[0][1] + right_lane[1][1]) // 2)
+
+    #draw the midline
+    midline_start, midline_end = left_mid, right_mid
+    # find the midpoint of the midline
+    mid_x = (midline_start[0] + midline_end[0]) // 2
+    mid_y = (midline_start[1] + midline_end[1]) // 2
+
+    # calculate slope of the midline
+    dx = midline_end[0] - midline_start[0]
+    dy = midline_end[1] - midline_start[1]
+
+    if dy == 0:
+        perp_slope = float('inf')
+    else:
+        perp_slope = -dx / dy
+
+    # extend perpendicular line
+    length = 200
+
+    if math.isinf(perp_slope):
+        perp_dx = 0
+        perp_dy = length
+    else:
+        perp_dx = length / (1 + perp_slope ** 2) ** 0.5
+        perp_dy = perp_slope * perp_dx
+
+    tilt_radians = math.radians(TILT_ANGLE)
+    perp_dx = int(perp_dx * math.cos(tilt_radians) - perp_dy * math.sin(tilt_radians))
+    perp_dy = int(perp_dx * math.sin(tilt_radians) + perp_dy * math.cos(tilt_radians))
+
+    perp_start = (mid_x - perp_dx, mid_y - perp_dy)
+    perp_end = (mid_x + perp_dx, mid_y + perp_dy)
+
+    # draw tilted line
+    cv2.line(frame, perp_start, perp_end, (0, 0, 255), 3)
+
+    return frame
+
 
 cap = cv2.VideoCapture('My Movie 7.MOV')
 arrow = cv2.imread("pink arrow.png", cv2.IMREAD_UNCHANGED)
