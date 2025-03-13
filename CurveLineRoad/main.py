@@ -105,7 +105,7 @@ def process_frame(frame, arrow, frame_count):
 
     return frame
 
-
+angle = -16
 def rotate_arrow(arrow, angle):
     height, width = arrow.shape[:2]
     center = (width // 2, height // 2)
@@ -121,9 +121,9 @@ def overlay_arrow(frame, arrow, frame_count):
     arrow_width = int(arrow_width * 0.2)
     arrow = cv2.resize(arrow, (arrow_width, arrow_height))
 
-    if 500 <= frame_count < 650:  # 20s to 25s
+    if 500 <= frame_count < 650:
         arrow = rotate_arrow(arrow, -90)
-    elif 1450 <= frame_count < 1600:  # 60s to 65s
+    elif 1450 <= frame_count < 1600:
         arrow = rotate_arrow(arrow, 90)
 
     arrow_bgr = arrow[:, :, :3]
@@ -137,7 +137,7 @@ def overlay_arrow(frame, arrow, frame_count):
 
     return frame
 
-TILT_ANGLE = -16  # degrees to the left
+
 def drawmidline(frame, left_lane, right_lane):
     if left_lane is None or right_lane is None:
         return frame
@@ -171,7 +171,7 @@ def drawmidline(frame, left_lane, right_lane):
         perp_dx = length / (1 + perp_slope ** 2) ** 0.5
         perp_dy = perp_slope * perp_dx
 
-    tilt_radians = math.radians(TILT_ANGLE)
+    tilt_radians = math.radians(angle)
     perp_dx = int(perp_dx * math.cos(tilt_radians) - perp_dy * math.sin(tilt_radians))
     perp_dy = int(perp_dx * math.sin(tilt_radians) + perp_dy * math.cos(tilt_radians))
 
